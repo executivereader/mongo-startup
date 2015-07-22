@@ -17,3 +17,4 @@ sudo service mongodb stop
 sudo rm /etc/mongodb.conf
 sudo cp mongodb.conf /etc/mongodb.conf
 sudo service mongodb start
+python update_replica_set.py
