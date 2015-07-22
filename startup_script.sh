@@ -5,6 +5,7 @@ sudo mkdir /data
 sudo mkdir /data/disk1
 sudo mount /dev/xvdb /data/disk1
 sudo mkdir /data/disk1/server
+sudo chmod 777 /data/disk1/server
 sudo mkdir /data/disk1/log
 sudo touch /data/disk1/log/mongo.txt
 sudo chmod 666 /data/disk1/log/mongo.txt
