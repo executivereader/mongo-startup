@@ -6,6 +6,8 @@ sudo mkdir /data/disk1
 sudo mount /dev/xvdb /data/disk1
 sudo mkdir /data/disk1/server
 sudo mkdir /data/disk1/log
+sudo touch /data/disk1/log/mongo.txt
+sudo chmod 666 /data/disk1/log/mongo.txt
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
 sudo echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt-get update
