@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+sudo apt-get update
+sudo mkfs -t ext4 /dev/xvdb
+sudo mkdir /data
+sudo mkdir /data/disk1
+sudo mount /dev/xvdb /data/disk1
+sudo mkdir /data/disk1/server
+sudo mkdir /data/disk1/log
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+sudo echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
+sudo apt-get update
+sudo apt-get install mongodb-10gen
+sudo service mongodb stop
+sudo rm /etc/mongodb.conf
+sudo cp mongodb.conf /etc/mongodb.conf
+sudo service mongodb start
