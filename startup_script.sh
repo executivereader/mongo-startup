@@ -17,4 +17,6 @@ sudo service mongodb stop
 sudo rm /etc/mongodb.conf
 sudo cp mongodb.conf /etc/mongodb.conf
 sudo service mongodb start
+sudo apt-get install -y python-dev python-pip
+sudo pip install pymongo
 python update_replica_set.py
