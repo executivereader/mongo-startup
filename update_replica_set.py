@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import AutoReconnect
 from socket import gethostname, gethostbyname
 from time import sleep
+import requests
 
 def get_connection_string_from_file(filename = None):
     '''
@@ -20,7 +21,7 @@ def get_connection_string_from_file(filename = None):
             connection_string = line
     return connection_string
 
-def get_connection_string_from_github(uri = None):
+def get_connection_string_from_uri(uri = None):
     '''
     Gets the connection string from github.
     Inputs:
@@ -32,6 +33,9 @@ def get_connection_string_from_github(uri = None):
     if uri is None:
         uri = "https://raw.githubusercontent.com/executivereader/mongo-startup/master/connection_string.txt"
     connection_string = ""
+    remote = requests.get(uri)
+    for line in remote: # this will get only the last line
+        connection_string = line
     return connection_string
 
 def start_mongo_client(filename = None, uri = None):
@@ -47,7 +51,7 @@ def start_mongo_client(filename = None, uri = None):
     try:
         client = MongoClient(connection_string)
     except Exception:
-        connection_string = get_connection_string_from_github(uri)
+        connection_string = get_connection_string_from_uri(uri)
         client = MongoClient(connection_string)
     return client
 
