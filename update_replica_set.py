@@ -211,7 +211,7 @@ if __name__ == "__main__":
             sleep(25)
         idx = idx + 1
     if member_of_replica_set(client):
-        print "Successfully added myself to replica set on try " + str(idx)
+        print "Self is in the replica set as of try " + str(idx)
         # update connection string here
         connection_string = get_connection_string(client)
         print "New connection string is:\n" + connection_string
