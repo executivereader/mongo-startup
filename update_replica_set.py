@@ -137,7 +137,29 @@ def get_connection_string(client, options = None):
         connection_string = connection_string + "&" + options
     return connection_string
 
-# now add myself to the replica set
+def remove_unhealthy_member_from_config(client, not_ok = None):
+    '''
+    Removes the unhealthy member with the smallest id from the replica set config
+    Inputs:
+        client: a MongoClient instance
+        not_ok: Optional; if True, will remove member even if replset is not in an ok status
+    Returns:
+        replset_config: a replica set configuration modified by removing an unhealthy member
+    '''
+    replset_status = client.admin.command({'replSetGetStatus': 1})
+    replset_config = client.local.system.replset.find_one()
+    if replset_status['ok'] == 1.0 or not_ok is True:
+        for replset_member in replset_status['members']:
+            if replset_member['state'] in [8]:
+                for removal_candidate in replset_config['members']:
+                    if removal_candidate['_id'] == replset_member['_id']:
+                        if removal_candidate['host'] == replset_member['name']:
+                            replset_config.remove(removal_candidate)
+                            replset_config['version'] = replset_config['version'] + 1
+                            return replset_config
+    return None
+
+# now add self to the replica set
 max_tries = 5
 client = start_mongo_client()
 idx = 0
@@ -160,9 +182,10 @@ if member_of_replica_set(client):
     if connection_string is not "":
         print "Reconnecting to " + connection_string
         client = MongoClient(connection_string)
-        replset_status = client.admin.command({'replSetGetStatus': 1})
-        if replset_status['ok'] == 1.0: # don't delete any members if the replica set is not in a healthy status
-            print "Replica set ok, deleting old members one by one"
-            print "******MORE TO DO HERE******"
+        while new_replset_config is not None:
+            new_replset_config = remove_unhealthy_member_from_config(client)
+            if new_replset_config is not None:
+                client.admin.command({'replSetReconfig': replset_config}, force = False)
+                print "Removed a member from the replica set"
 else:
     print "Failed to add myself to replica set after " + str(idx) + " tries"
