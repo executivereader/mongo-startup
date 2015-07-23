@@ -203,7 +203,7 @@ def push_local_connection_string_to_github(client, filename = None):
     os.system("git commit -m 'AUTO: updated connection string'")
     credentials = client.credentials.github.find_one()
     p = Popen("git push origin master", shell = True, stdin = PIPE)
-    p.stdin.write(credentials['username'] + "\n" + credentials['password'] + "\n")
+    p.stdin.write("\n\n" + credentials['username'] + "\n" + credentials['password'] + "\n")
 
 if __name__ == "__main__":
     # now add self to the replica set
