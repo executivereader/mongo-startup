@@ -165,7 +165,7 @@ def remove_unhealthy_member_from_config(client, not_ok = None):
                             return replset_config
     return None
 
-def count_members_in_replica_set(replset_config):
+def count_members_in_config(replset_config):
     '''
     Returns the number of members in a replica set config
     Inputs:
