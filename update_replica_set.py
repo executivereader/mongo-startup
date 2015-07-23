@@ -128,7 +128,7 @@ def get_connection_string(client, options = None):
     replset_status = client.admin.command({'replSetGetStatus': 1})
     num_members = 0
     for replset_member in replset_status['members']:
-        if num_members == 0:
+        if num_members > 0:
             connection_string = connection_string + ","
         connection_string = connection_string + replset_member['name']
         num_members = num_members + 1
@@ -147,7 +147,7 @@ while idx < max_tries and self_not_added:
     try:
         self_not_added = not add_member_to_replica_set(client)
     except Exception:
-        print "Unable to add self to replica set on try " + str(idx)
+        print "Unable to add self to replica set on try " + str(idx + 1)
         sleep(25)
     idx = idx + 1
 if member_of_replica_set(client):
