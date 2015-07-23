@@ -186,7 +186,7 @@ if member_of_replica_set(client):
         members_removed = 0
         new_replset_config = remove_unhealthy_member_from_config(client)
         while new_replset_config is not None and members_removed < max_members_to_remove:
-            client.admin.command({'replSetReconfig': replset_config}, force = False)
+            client.admin.command({'replSetReconfig': new_replset_config}, force = False)
             print "Removed a member from the replica set"
             members_removed = members_removed + 1
             new_replset_config = remove_unhealthy_member_from_config(client)
