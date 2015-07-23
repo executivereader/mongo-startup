@@ -184,11 +184,11 @@ if member_of_replica_set(client):
         client = MongoClient(connection_string)
         max_members_to_remove = 1
         members_removed = 0
+        new_replset_config = remove_unhealthy_member_from_config(client)
         while new_replset_config is not None and members_removed < max_members_to_remove:
+            client.admin.command({'replSetReconfig': replset_config}, force = False)
+            print "Removed a member from the replica set"
+            members_removed = members_removed + 1
             new_replset_config = remove_unhealthy_member_from_config(client)
-            if new_replset_config is not None:
-                client.admin.command({'replSetReconfig': replset_config}, force = False)
-                print "Removed a member from the replica set"
-                members_removed = members_removed + 1
 else:
     print "Failed to add myself to replica set after " + str(idx) + " tries"
