@@ -138,14 +138,17 @@ def get_connection_string(client, options = None):
     return connection_string
 
 # now add myself to the replica set
-max_tries = 3
+max_tries = 5
 client = start_mongo_client()
 idx = 0
-while idx < max_tries:
+self_not_added = True
+while idx < max_tries and self_not_added:
+    sleep(5)
     try:
-        add_member_to_replica_set(client)
+        self_not_added = !add_member_to_replica_set(client)
     except Exception:
-        pass
+        print "Unable to add self to replica set on try " + str(idx)
+        sleep(25)
     idx = idx + 1
 if member_of_replica_set(client):
     print "Successfully added myself to replica set on try " + str(idx)
