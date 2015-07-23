@@ -19,4 +19,5 @@ sudo cp mongodb.conf /etc/mongodb.conf
 sudo service mongodb start
 sudo apt-get install -y python-dev python-pip
 sudo pip install pymongo
+sudo chmod 666 connection_string.txt
 python update_replica_set.py
