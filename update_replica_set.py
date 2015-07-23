@@ -1,21 +1,116 @@
 from pymongo import MongoClient
 from socket import gethostname, gethostbyname
+from time import sleep
 
-connection_string = ""
-with open("connection_string.txt") as connection_string_file:
-    for line in connection_string_file:
-        connection_string = line
+def get_connection_string_from_file(filename = None):
+    '''
+    Gets the connection string from a file. 
+    Default is connection_string.txt located in the local directory
+    Inputs:
+        filename: Optionally specified by user, location to search for connection string
+    Returns:
+        connection_string: The mongo connection string stored in filename
+    '''
+    if filename is None:
+        filename = "connection_string.txt"
+    connection_string = ""
+    with open(filename) as connection_string_file:
+        for line in connection_string_file: # this will get only the last line
+            connection_string = line
+    return connection_string
 
-if connection_string is not "":
-    print "Connecting to " + connection_string
-    client = MongoClient(connection_string)
+def get_connection_string_from_github(uri = None):
+    '''
+    Gets the connection string from github.
+    Inputs:
+        uri: Optionally specified by user, URI to search for connection string
+    Returns:
+        connection_string: The mongo connection string stored in filename
+    ******NEEDS TO BE FINISHED******
+    '''
+    if uri is None:
+        uri = "https://raw.githubusercontent.com/executivereader/mongo-startup/master/connection_string.txt"
+    connection_string = ""
+    return connection_string
+
+def member_of_replica_set(client, hostname = None, port = None):
+    '''
+    Checks if hostname:port is in the replica set connected to from connection_string
+    Inputs:
+        client: a MongoClient instance
+        hostname: hostname or IP address (get it through socket.gethostbyname(socket.gethostname()))
+        port: optionally specified by user, defaults to 27017
+    Returns:
+        True if hostname:port is in the replica set
+        False otherwise
+    '''
+    if hostname is None:
+        hostname = gethostbyname(gethostname())
+    if port is None:
+        port = 27017
     replset_config = client.local.system.replset.find_one()
-    new_member_id = 0
     for replset_member in replset_config['members']:
-        if replset_member['_id'] > new_member_id:
-            new_member_id = replset_member['_id']
-    new_member_id = new_member_id + 1
-    new_member_hostname = gethostbyname(gethostname()) + ':27017'
-    replset_config['members'].append({u'host': new_member_hostname, u'_id': new_member_id})
-    replset_config['version'] = replset_config['version'] + 1
-    client.admin.command({'replSetReconfig': replset_config}, force = False)
+        if replset_member['host'] ==  gethostbyname(gethostname()) + ':27017':
+            return True
+    return False
+
+def get_available_host_id(client):
+    '''
+    Gets an id that is available for adding a member to a replica set.
+    Inputs:
+        client: a MongoClient instance
+    Returns:
+        new_member_id: the smallest integer that is an available id
+    '''
+    replset_config = client.local.system.replset.find_one()
+    new_member_id = 1
+    id_not_ok = True
+    while id_not_ok:
+        id_not_ok = False
+        for replset_member in replset_config['members']:
+            if replset_member['_id'] == new_member_id:
+                new_member_id = new_member_id + 1
+                id_not_ok = True
+    return new_member_id
+
+def add_member_to_replica_set(client, hostname = None, port = None):
+    '''
+    Adds a member to the replica set. 
+    Will not add if the hostname is already in the replset.
+    Inputs: 
+        client: a MongoClient instance
+        hostname: hostname or IP address (get it through socket.gethostbyname(socket.gethostname()))
+        port: optionally specified by user, defaults to 27017
+    Returns:
+        True if hostname:port appears in the replica set configuration after the function runs
+        False otherwise
+    '''
+    if hostname is None:
+        hostname = gethostbyname(gethostname())
+    if port is None:
+        port = 27017
+    new_member_hostname = hostname + ':' + str(port)
+    if not member_of_replica_set(client,hostname,port):
+        replset_config['members'].append({u'host': hostname + ':' + str(port), u'_id': get_available_host_id(client)})
+        replset_config['version'] = replset_config['version'] + 1
+        client.admin.command({'replSetReconfig': replset_config}, force = False)
+    return member_of_replica_set(client,hostname,port)
+
+# now add the new member to the replica set
+client = MongoClient(get_connection_string_from_file())
+if add_member_to_replica_set(client):
+    print "Succesfully added myself to replica set"
+
+# consider updating the connection string and reconnecting here?
+
+# sleep while reconfiguration happens
+sleep(120)
+
+# now delete any members that are in an unreachable status
+if connection_string is not "":
+    print "Reconnecting to " + connection_string
+    client = MongoClient(connection_string)
+    replset_status = client.admin.command({'replSetGetStatus': 1})
+    if replset_status['ok'] == 1.0: # don't delete any members if the replica set is not in a healthy status
+        print "Replica set ok, deleting old members one by one"
+        print "******MORE TO DO HERE******"
