@@ -198,7 +198,7 @@ def push_local_connection_string_to_github(client, filename = None):
     if filename is None:
         filename = "connection_string.txt"
     os.system("git add " + filename)
-    os.system("git commit -m 'AUTO: updated connection string')
+    os.system("git commit -m 'AUTO: updated connection string'")
     credentials = client.credentials.github.find_one()
     os.system("printf '" + credentials['username'] + "\n" + credentials['password'] + "' | git push origin master")
 
