@@ -150,7 +150,8 @@ while idx < max_tries:
 if member_of_replica_set(client):
     print "Successfully added myself to replica set on try " + str(idx)
     # consider updating connection string here
-    print "New connection string is:\n" + get_connection_string(client)
+    connection_string = get_connection_string(client)
+    print "New connection string is:\n" + connection_string
     # sleep(120)
     # now delete any members that are in an unreachable status
     if connection_string is not "":
