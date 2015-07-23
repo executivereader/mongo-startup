@@ -4,6 +4,7 @@ from socket import gethostname, gethostbyname
 from time import sleep
 import requests
 from subprocess import call
+import os
 
 def get_connection_string_from_file(filename = None):
     '''
@@ -194,7 +195,12 @@ def push_local_connection_string_to_github(client, filename = None):
     '''
     Pushes the local connection string file to github
     '''
-    print "This will do things"
+    if filename is None:
+        filename = "connection_string.txt"
+    os.system("git add " + filename)
+    os.system("git commit -m 'AUTO: updated connection string')
+    credentials = client.credentials.github.find_one()
+    os.system("printf '" + credentials['username'] + "\n" + credentials['password'] + "' | git push origin master")
 
 if __name__ == "__main__":
     # now add self to the replica set
