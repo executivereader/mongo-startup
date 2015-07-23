@@ -145,7 +145,7 @@ self_not_added = True
 while idx < max_tries and self_not_added:
     sleep(5)
     try:
-        self_not_added = !add_member_to_replica_set(client)
+        self_not_added = not add_member_to_replica_set(client)
     except Exception:
         print "Unable to add self to replica set on try " + str(idx)
         sleep(25)
