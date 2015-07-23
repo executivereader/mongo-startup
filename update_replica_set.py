@@ -7,6 +7,7 @@ with open("connection_string.txt") as connection_string_file:
         connection_string = line
 
 if connection_string is not "":
+    print "Connecting to " + connection_string
     client = MongoClient(connection_string)
     replset_config = client.local.system.replset.find_one()
     new_member_id = 0
