@@ -234,13 +234,13 @@ if __name__ == "__main__":
             members_removed = 0
             new_replset_config = remove_unhealthy_member_from_config(client)
             while new_replset_config is not None and members_removed < max_members_to_remove and count_members_in_config(new_replset_config) >= min_members_in_replica_set:
-                client.admin.command({'replSetReconfig': new_replset_config}, force = False)
-                print "Removed a member from the replica set"
-                members_removed = members_removed + 1
                 try:
-                    new_replset_config = remove_unhealthy_member_from_config(client)
+                    client.admin.command({'replSetReconfig': new_replset_config}, force = False)
                 except AutoReconnect:
                     print "Connection closed; auto-reconnecting"
+                print "Removed a member from the replica set"
+                members_removed = members_removed + 1
+                new_replset_config = remove_unhealthy_member_from_config(client)
                 sleep(30)
     else:
         print "Failed to add self to replica set after " + str(idx) + " tries"
