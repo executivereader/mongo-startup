@@ -154,7 +154,7 @@ def remove_unhealthy_member_from_config(client, not_ok = None):
                 for removal_candidate in replset_config['members']:
                     if removal_candidate['_id'] == replset_member['_id']:
                         if removal_candidate['host'] == replset_member['name']:
-                            replset_config.remove(removal_candidate)
+                            replset_config['members'].remove(removal_candidate)
                             replset_config['version'] = replset_config['version'] + 1
                             return replset_config
     return None
