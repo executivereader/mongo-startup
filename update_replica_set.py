@@ -238,4 +238,4 @@ if __name__ == "__main__":
     # update with the latest connection string
     connection_string = get_connection_string(client)
     update_local_connection_string(connection_string)
-    push_local_connection_string_to_github()
+    push_local_connection_string_to_github(client)
