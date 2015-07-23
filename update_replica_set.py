@@ -3,7 +3,7 @@ from pymongo.errors import AutoReconnect
 from socket import gethostname, gethostbyname
 from time import sleep
 import requests
-from subprocess import call
+from subprocess import call, Popen, PIPE
 import os
 
 def get_connection_string_from_file(filename = None):
@@ -202,7 +202,8 @@ def push_local_connection_string_to_github(client, filename = None):
     os.system("git add " + filename)
     os.system("git commit -m 'AUTO: updated connection string'")
     credentials = client.credentials.github.find_one()
-    os.system("printf '" + credentials['username'] + "\n" + credentials['password'] + "\n' | git push origin master")
+    p = Popen("git push origin master", shell = True, stdin = PIPE)
+    p.stdin.write(credentials['username'] + "\n" + credentials['password'] + "\n")
 
 if __name__ == "__main__":
     # now add self to the replica set
