@@ -90,7 +90,7 @@ def get_available_host_id(client):
                 id_not_ok = True
     return new_member_id
 
-def add_member_to_replica_set(client, hostname = None, port = None):
+def add_member_to_replica_set(client, hostname = None, port = None, force = None):
     '''
     Adds a member to the replica set. 
     Will not add if the hostname is already in the replset.
@@ -98,6 +98,7 @@ def add_member_to_replica_set(client, hostname = None, port = None):
         client: a MongoClient instance
         hostname: Optional; hostname or IP address (default socket.gethostbyname(socket.gethostname()))
         port: Optional; defaults to 27017
+        force: Optional; defaults to False
     Returns:
         True if hostname:port appears in the replica set configuration after the function runs
         False otherwise
@@ -106,29 +107,54 @@ def add_member_to_replica_set(client, hostname = None, port = None):
         hostname = gethostbyname(gethostname())
     if port is None:
         port = 27017
+    if force is None:
+        force = False
     new_member_hostname = hostname + ':' + str(port)
     if not member_of_replica_set(client,hostname,port):
         replset_config = client.local.system.replset.find_one()
         replset_config['members'].append({u'host': hostname + ':' + str(port), u'_id': get_available_host_id(client)})
         replset_config['version'] = replset_config['version'] + 1
-        client.admin.command({'replSetReconfig': replset_config}, force = False)
+        client.admin.command({'replSetReconfig': replset_config}, force = force)
     return member_of_replica_set(client,hostname,port)
 
-# now add the new member to the replica set
-client = start_mongo_client()
-if add_member_to_replica_set(client):
-    print "Succesfully added myself to replica set"
-
-# consider updating the connection string and reconnecting here?
-
-# sleep while reconfiguration happens
-sleep(120)
-
-# now delete any members that are in an unreachable status
-if connection_string is not "":
-    print "Reconnecting to " + connection_string
-    client = MongoClient(connection_string)
+def get_connection_string(client, options = None):
+    '''
+    Gets a connection string that will work for an existing replica set
+    Inputs:
+        client: a MongoClient instance
+        options: Optional; string to add to the end of the connection string
+    '''
+    connection_string = "mongodb://"
     replset_status = client.admin.command({'replSetGetStatus': 1})
-    if replset_status['ok'] == 1.0: # don't delete any members if the replica set is not in a healthy status
-        print "Replica set ok, deleting old members one by one"
-        print "******MORE TO DO HERE******"
+    num_members = 0
+    for replset_member in replset_status['members']:
+        if num_members == 0:
+            connection_string = connection_string + ","
+        connection_string = connection_string + replset_member['name']
+        num_members = num_members + 1
+    connection_string = connection_string + "/?replicaSet=" + replset_status['set']
+    if options is not None:
+        connection_string = connection_string + "&" + options
+    return connection_string
+
+# now add myself to the replica set
+max_tries = 3
+client = start_mongo_client()
+idx = 0
+while not add_member_to_replica_set(client) and idx < max_tries:
+    idx = idx + 1
+if member_of_replica_set(client):
+    print "Successfully added myself to replica set on try " + str(idx)
+    # consider updating connection string here
+    print "New connection string is:\n" + get_connection_string(client)
+    # sleep(120)
+    # now delete any members that are in an unreachable status
+    if connection_string is not "":
+        print "Reconnecting to " + connection_string
+        client = MongoClient(connection_string)
+        replset_status = client.admin.command({'replSetGetStatus': 1})
+        if replset_status['ok'] == 1.0: # don't delete any members if the replica set is not in a healthy status
+            print "Replica set ok, deleting old members one by one"
+            print "******MORE TO DO HERE******"
+else:
+    print "Failed to add myself to replica set after " + str(idx) + " tries"
