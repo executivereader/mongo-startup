@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from pymongo.errors import AutoReconnect
 from socket import gethostname, gethostbyname
 from time import sleep
 
@@ -159,36 +160,40 @@ def remove_unhealthy_member_from_config(client, not_ok = None):
                             return replset_config
     return None
 
-# now add self to the replica set
-max_tries = 5
-client = start_mongo_client()
-idx = 0
-self_not_added = True
-while idx < max_tries and self_not_added:
-    sleep(5)
-    try:
-        self_not_added = not add_member_to_replica_set(client)
-    except Exception:
-        print "Unable to add self to replica set on try " + str(idx + 1)
-        sleep(25)
-    idx = idx + 1
-if member_of_replica_set(client):
-    print "Successfully added myself to replica set on try " + str(idx)
-    # consider updating connection string here
-    connection_string = get_connection_string(client)
-    print "New connection string is:\n" + connection_string
-    # sleep(120)
-    # now delete any members that are in an unreachable status
-    if connection_string is not "":
-        print "Reconnecting to " + connection_string
-        client = MongoClient(connection_string)
-        max_members_to_remove = 1
-        members_removed = 0
-        new_replset_config = remove_unhealthy_member_from_config(client)
-        while new_replset_config is not None and members_removed < max_members_to_remove:
-            client.admin.command({'replSetReconfig': new_replset_config}, force = False)
-            print "Removed a member from the replica set"
-            members_removed = members_removed + 1
+if __name__ == "__main__":
+    # now add self to the replica set
+    max_tries = 5
+    client = start_mongo_client()
+    idx = 0
+    self_not_added = True
+    while idx < max_tries and self_not_added:
+        sleep(5)
+        try:
+            self_not_added = not add_member_to_replica_set(client)
+        except Exception:
+            print "Unable to add self to replica set on try " + str(idx + 1)
+            sleep(25)
+        idx = idx + 1
+    if member_of_replica_set(client):
+        print "Successfully added myself to replica set on try " + str(idx)
+        # update connection string here
+        connection_string = get_connection_string(client)
+        print "New connection string is:\n" + connection_string
+        sleep(120)
+        # now delete any members that are in an unreachable status
+        if connection_string is not "":
+            print "Reconnecting to " + connection_string
+            client = MongoClient(connection_string)
+            max_members_to_remove = 1
+            members_removed = 0
             new_replset_config = remove_unhealthy_member_from_config(client)
-else:
-    print "Failed to add myself to replica set after " + str(idx) + " tries"
+            while new_replset_config is not None and members_removed < max_members_to_remove:
+                client.admin.command({'replSetReconfig': new_replset_config}, force = False)
+                print "Removed a member from the replica set"
+                members_removed = members_removed + 1
+                try:
+                    new_replset_config = remove_unhealthy_member_from_config(client)
+                except AutoReconnect:
+                    print "Connection closed; auto-reconnecting"
+    else:
+        print "Failed to add myself to replica set after " + str(idx) + " tries"
