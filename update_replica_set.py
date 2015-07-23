@@ -91,6 +91,7 @@ def add_member_to_replica_set(client, hostname = None, port = None):
         port = 27017
     new_member_hostname = hostname + ':' + str(port)
     if not member_of_replica_set(client,hostname,port):
+        replset_config = client.local.system.replset.find_one()
         replset_config['members'].append({u'host': hostname + ':' + str(port), u'_id': get_available_host_id(client)})
         replset_config['version'] = replset_config['version'] + 1
         client.admin.command({'replSetReconfig': replset_config}, force = False)
