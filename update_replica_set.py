@@ -3,6 +3,7 @@ from pymongo.errors import AutoReconnect
 from socket import gethostname, gethostbyname
 from time import sleep
 import requests
+from subprocess import call
 
 def get_connection_string_from_file(filename = None):
     '''
@@ -28,7 +29,7 @@ def get_connection_string_from_uri(uri = None):
         uri: Optional; URI to search for connection string
     Returns:
         connection_string: The mongo connection string stored in filename
-    ******NEEDS TO BE FINISHED******
+    ******NEEDS TO BE TESTED******
     '''
     if uri is None:
         uri = "https://raw.githubusercontent.com/executivereader/mongo-startup/master/connection_string.txt"
@@ -164,6 +165,37 @@ def remove_unhealthy_member_from_config(client, not_ok = None):
                             return replset_config
     return None
 
+def count_members_in_replica_set(replset_config):
+    '''
+    Returns the number of members in a replica set config
+    Inputs:
+        replset_config: The replica set config
+    '''
+    return len(replset_config['members'])
+
+def update_local_connection_string(connection_string, filename = None):
+    '''
+    Modifies a local file to put a new connection string in there
+    Inputs:
+        connection_string: a valid mongo connection string
+        filename: Optional; the local filename
+    Returns:
+        True
+    '''
+    if filename is None:
+        filename =  "connection_string.txt"
+    with open(filename, 'r+') as local_connection_string_file:
+        local_connection_string_file.seek(0)
+        local_connection_string_file.write(connection_string)
+        local_connection_string_file.truncate()
+    return True
+
+def push_local_connection_string_to_github(client, filename = None):
+    '''
+    Pushes the local connection string file to github
+    '''
+    print "This will do things"
+
 if __name__ == "__main__":
     # now add self to the replica set
     max_tries = 5
@@ -189,9 +221,10 @@ if __name__ == "__main__":
             print "Reconnecting to " + connection_string
             client = MongoClient(connection_string)
             max_members_to_remove = 1
+            min_members_in_replica_set = 3
             members_removed = 0
             new_replset_config = remove_unhealthy_member_from_config(client)
-            while new_replset_config is not None and members_removed < max_members_to_remove:
+            while new_replset_config is not None and members_removed < max_members_to_remove and count_members_in_config(new_replset_config) >= min_members_in_replica_set:
                 client.admin.command({'replSetReconfig': new_replset_config}, force = False)
                 print "Removed a member from the replica set"
                 members_removed = members_removed + 1
@@ -201,4 +234,8 @@ if __name__ == "__main__":
                     print "Connection closed; auto-reconnecting"
                 sleep(30)
     else:
-        print "Failed to add myself to replica set after " + str(idx) + " tries"
+        print "Failed to add self to replica set after " + str(idx) + " tries"
+    # update with the latest connection string
+    connection_string = get_connection_string(client)
+    update_local_connection_string(connection_string)
+    push_local_connection_string_to_github()
