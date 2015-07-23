@@ -7,7 +7,7 @@ def get_connection_string_from_file(filename = None):
     Gets the connection string from a file. 
     Default is connection_string.txt located in the local directory
     Inputs:
-        filename: Optionally specified by user, location to search for connection string
+        filename: Optional; location to search for connection string
     Returns:
         connection_string: The mongo connection string stored in filename
     '''
@@ -23,7 +23,7 @@ def get_connection_string_from_github(uri = None):
     '''
     Gets the connection string from github.
     Inputs:
-        uri: Optionally specified by user, URI to search for connection string
+        uri: Optional; URI to search for connection string
     Returns:
         connection_string: The mongo connection string stored in filename
     ******NEEDS TO BE FINISHED******
@@ -33,13 +33,30 @@ def get_connection_string_from_github(uri = None):
     connection_string = ""
     return connection_string
 
+def start_mongo_client(filename = None, uri = None):
+    '''
+    Tries to get a MongoClient
+    First tries the connection string in the local file
+    Next tries the connection string on github
+    Inputs:
+        filename: Optional; filename to look for connection string in
+        uri: Optional; URI to look for connection string in
+    '''
+    connection_string = get_connection_string_from_file(filename)
+    try:
+        client = MongoClient(connection_string)
+    except Exception:
+        connection_string = get_connection_string_from_github(uri)
+        client = MongoClient(connection_string)
+    return client
+
 def member_of_replica_set(client, hostname = None, port = None):
     '''
     Checks if hostname:port is in the replica set connected to from connection_string
     Inputs:
         client: a MongoClient instance
-        hostname: hostname or IP address (get it through socket.gethostbyname(socket.gethostname()))
-        port: optionally specified by user, defaults to 27017
+        hostname: Optional; hostname or IP address (default: socket.gethostbyname(socket.gethostname()))
+        port: Optional; defaults to 27017
     Returns:
         True if hostname:port is in the replica set
         False otherwise
@@ -79,8 +96,8 @@ def add_member_to_replica_set(client, hostname = None, port = None):
     Will not add if the hostname is already in the replset.
     Inputs: 
         client: a MongoClient instance
-        hostname: hostname or IP address (get it through socket.gethostbyname(socket.gethostname()))
-        port: optionally specified by user, defaults to 27017
+        hostname: Optional; hostname or IP address (default socket.gethostbyname(socket.gethostname()))
+        port: Optional; defaults to 27017
     Returns:
         True if hostname:port appears in the replica set configuration after the function runs
         False otherwise
@@ -98,7 +115,7 @@ def add_member_to_replica_set(client, hostname = None, port = None):
     return member_of_replica_set(client,hostname,port)
 
 # now add the new member to the replica set
-client = MongoClient(get_connection_string_from_file())
+client = start_mongo_client()
 if add_member_to_replica_set(client):
     print "Succesfully added myself to replica set"
 
