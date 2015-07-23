@@ -195,5 +195,6 @@ if __name__ == "__main__":
                     new_replset_config = remove_unhealthy_member_from_config(client)
                 except AutoReconnect:
                     print "Connection closed; auto-reconnecting"
+                sleep(30)
     else:
         print "Failed to add myself to replica set after " + str(idx) + " tries"
